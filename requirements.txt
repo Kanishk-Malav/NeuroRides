@@ -1,0 +1,40 @@
+# Django and Core
+Django==5.0.1
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+django-environ==0.11.2
+psycopg2-binary==2.9.9
+
+# Authentication and Security
+djangorestframework-simplejwt==5.3.0
+django-ratelimit==4.1.0
+cryptography>=42.0.0
+
+# WebSockets and Real-time
+channels==4.0.0
+channels-redis==4.2.0
+
+# Background Tasks
+celery==5.3.4
+redis==5.0.1
+django-celery-beat==2.5.0
+
+# Payment Processing
+stripe==7.8.0
+razorpay==1.4.1
+
+# Cache
+django-redis==5.4.0
+
+# Development and Testing
+pytest==7.4.3
+pytest-django==4.7.0
+factory-boy==3.3.0
+coverage==7.3.2
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# API Documentation
+drf-spectacular==0.27.0

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund Receipt - {{ receipt_number }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .receipt-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .header .receipt-type {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .receipt-number {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-top: 15px;
+            display: inline-block;
+            font-weight: 500;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h3 {
+            color: #d32f2f;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .amount-highlight {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 20px;
+            border-radius: 4px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .amount-highlight .amount {
+            font-size: 32px;
+            font-weight: bold;
+            color: #d32f2f;
+            margin: 0;
+        }
+        .amount-highlight .currency {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+        .info-item .label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .info-item .value {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-completed {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        .refund-notice {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .refund-notice h4 {
+            margin: 0 0 10px 0;
+            color: #f57c00;
+        }
+        .refund-notice p {
+            margin: 0;
+            color: #666;
+            line-height: 1.5;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+        .footer p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .company-info {
+            font-size: 12px;
+            color: #999;
+            margin-top: 15px;
+        }
+        @media (max-width: 600px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <h1>{{ company_info.name }}</h1>
+            <div class="receipt-type">Refund Receipt</div>
+            <div class="receipt-number">{{ receipt_number }}</div>
+        </div>
+        
+        <div class="content">
+            <div class="amount-highlight">
+                <div class="amount">-${{ refund_info.amount }}</div>
+                <div class="currency">{{ refund_info.currency }} Refunded</div>
+                <div class="status-badge status-completed">{{ refund_info.status }}</div>
+            </div>
+            
+            <div class="section">
+                <h3>Refund Details</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="label">Refund ID</div>
+                        <div class="value">{{ refund_info.gateway_refund_id|default:"Processing" }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Refund Reason</div>
+                        <div class="value">{{ refund_info.reason }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Original Payment</div>
+                        <div class="value">{{ original_payment_id }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Refund Date</div>
+                        <div class="value">{{ date|date:"M d, Y H:i" }}</div>
+                    </div>
+                </div>
+                
+                {% if refund_info.notes %}
+                <div style="margin-top: 20px;">
+                    <div class="info-item">
+                        <div class="label">Notes</div>
+                        <div class="value">{{ refund_info.notes }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="section">
+                <h3>Original Payment Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="label">Original Amount</div>
+                        <div class="value">${{ original_payment_info.amount }} {{ original_payment_info.currency }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Payment Date</div>
+                        <div class="value">{{ original_payment_info.date|date:"M d, Y H:i" }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Transaction ID</div>
+                        <div class="value">{{ original_payment_info.transaction_id }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Customer Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="label">Name</div>
+                        <div class="value">{{ customer_info.name }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Email</div>
+                        <div class="value">{{ customer_info.email }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="refund-notice">
+                <h4>Important Information</h4>
+                <p>
+                    Your refund has been processed successfully. Please allow 3-5 business days for the refunded amount 
+                    to appear in your original payment method. If you have any questions about this refund, 
+                    please contact our support team with your refund receipt number.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Refund processed by {{ company_info.name }}</strong></p>
+            <p>Questions? Contact us at {{ company_info.email }} or {{ company_info.phone }}</p>
+            <div class="company-info">
+                {{ company_info.address }}<br>
+                {{ company_info.website }}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
