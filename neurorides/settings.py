@@ -312,6 +312,10 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "test@example.com")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "testpassword")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+# Payment Encryption Key
+PAYMENT_ENCRYPTION_KEY = os.environ.get("PAYMENT_ENCRYPTION_KEY")
+
+
 # Security Settings
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
