@@ -185,7 +185,10 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = True
 
 # Redis Configuration
-REDIS_URL = env('REDIS_URL')
+REDIS_URL = env(
+    "REDIS_URL",
+    default="redis://localhost:6379/0"  # sirf local fallback, chaahe to change bhi kar sakta hai
+)
 
 # Channels Configuration
 CHANNEL_LAYERS = {
