@@ -583,12 +583,3 @@ SPECTACULAR_SETTINGS = {
 
 # Create logs directory if it doesn't exist
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
-
-import sentry_sdk
-
-sentry_sdk.init(
-    dsn="https://02bec72055386c5c8fd7f5e1fc08239a@o4510440802680832.ingest.us.sentry.io/4510440803794944",
-    # Add data like request headers and IP for users,
-    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=True,
-)
