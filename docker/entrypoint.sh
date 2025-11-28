@@ -1,26 +1,14 @@
 #!/bin/bash
 set -e
 
-# Wait for database to be ready
-echo "Waiting for database..."
-while ! nc -z $DB_HOST $DB_PORT; do
-  sleep 0.1
-done
-echo "Database is ready!"
+echo "Starting NeuroRides container..."
 
-# Wait for Redis to be ready
-echo "Waiting for Redis..."
-while ! nc -z $REDIS_HOST $REDIS_PORT; do
-  sleep 0.1
-done
-echo "Redis is ready!"
-
-# Run database migrations
-echo "Running database migrations..."
+# Run database migrations (safe)
+echo "Running migrations..."
 python manage.py migrate --noinput
 
 # Create superuser if it doesn't exist
-echo "Creating superuser if needed..."
+echo "Checking superuser..."
 python manage.py shell << EOF
 from django.contrib.auth import get_user_model
 User = get_user_model()
@@ -43,6 +31,5 @@ if [ "$LOAD_INITIAL_DATA" = "true" ]; then
     python manage.py setup_payment_gateways
 fi
 
-# Start the application
 echo "Starting application..."
 exec "$@"
