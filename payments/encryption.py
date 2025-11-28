@@ -205,3 +205,12 @@ def _is_encrypted(data: str) -> bool:
 
 def _is_masked(data: str) -> bool:
     return '*' in data or 'X' in data
+
+
+class PaymentAuditLogger:
+    """Simple audit logger for payment events."""
+    def log(self, message):
+        print(f"[PAYMENT AUDIT] {message}")
+
+# Global audit logger instance (THIS WAS MISSING)
+payment_audit_logger = PaymentAuditLogger()
