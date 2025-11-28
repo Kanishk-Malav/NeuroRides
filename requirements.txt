@@ -38,3 +38,6 @@ whitenoise==6.6.0
 
 # API Documentation
 drf-spectacular==0.27.0
+
+#Monitoring
+psutil==5.9.5
