@@ -12,7 +12,7 @@ from django.utils import timezone
 from cryptography.fernet import Fernet
 from django.conf import settings
 import json
-from .encryption import payment_encryption, payment_audit_logger
+from .encryption import payment_encryption
 
 from rides.models import Ride
 
