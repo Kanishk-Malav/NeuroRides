@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from './store';
-import { checkAuthStatus } from './store/slices/authSlice';
+//import { checkAuthStatus } from './store/slices/authSlice';
 
 // Layout Components
 import Layout from './components/layout/Layout';
@@ -29,10 +29,6 @@ import PaymentHistory from './components/payments/PaymentHistory';
 function App() {
   const dispatch = useDispatch();
   const { isAuthenticated, loading, user } = useSelector((state: RootState) => state.auth);
-
-  useEffect(() => {
-    dispatch(checkAuthStatus() as any);
-  }, [dispatch]);
 
   if (loading) {
     return (
