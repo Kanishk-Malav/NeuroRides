@@ -8,6 +8,8 @@ const initialState: AnalyticsState = {
   chartData: {},
   isLoading: false,
   error: null,
+  analytics: undefined,
+  loading: false
 };
 
 // Async thunks
