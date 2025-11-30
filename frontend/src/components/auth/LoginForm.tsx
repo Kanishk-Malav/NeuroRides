@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from '../../store';
-import { loginUser } from '../../store/slices/authSlice';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const LoginForm: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const auth = useSelector((state: RootState) => state.auth);
+  const loading = (auth as any)?.loading ?? false;
+  const error = (auth as any)?.error ?? null;
   
   const [formData, setFormData] = useState({
     email: '',
@@ -18,12 +19,6 @@ const LoginForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await dispatch(loginUser(formData) as any).unwrap();
-      navigate('/dashboard');
-    } catch (error) {
-      // Error handled by Redux slice
-    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
