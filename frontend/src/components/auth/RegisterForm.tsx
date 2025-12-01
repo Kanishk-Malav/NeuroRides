@@ -2,13 +2,21 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from '../../store';
-import { registerUser } from '../../store/slices/authSlice';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const RegisterForm: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const auth = useSelector((state: RootState) => state.auth);
+  const error = auth.error as unknown as string | null;
+  let loading = false;
+  if ('loading' in auth) {
+    loading = (auth as any).loading;
+  } else if ('status' in auth) {
+    loading = (auth as any).status === 'loading';
+  } else if ('isLoading' in auth) {
+    loading = (auth as any).isLoading;
+  }
   
   const [formData, setFormData] = useState({
     email: '',
@@ -51,22 +59,6 @@ const RegisterForm: React.FC = () => {
     
     if (!validateForm()) {
       return;
-    }
-    
-    try {
-      await dispatch(registerUser({
-        email: formData.email,
-        password: formData.password,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        phone_number: formData.phoneNumber,
-        role: formData.role
-      }) as any).unwrap();
-      navigate('/login', { 
-        state: { message: 'Registration successful! Please check your email to verify your account.' }
-      });
-    } catch (error) {
-      // Error handled by Redux slice
     }
   };
 
