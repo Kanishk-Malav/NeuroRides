@@ -7,6 +7,7 @@ const initialState: PaymentsState = {
   payments: [],
   isLoading: false,
   error: null,
+  loading: false
 };
 
 // Async thunks

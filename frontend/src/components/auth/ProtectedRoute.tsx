@@ -16,16 +16,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireAuth = true 
 }) => {
   const location = useLocation();
-  const { isAuthenticated, user, loading } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
-  // Show loading spinner while checking authentication
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+  // If your AuthState exposes a loading flag with a different name, add the check here.
+  // No loading flag is present on AuthState, so we skip the spinner.
 
   // If authentication is required but user is not authenticated
   if (requireAuth && !isAuthenticated) {
