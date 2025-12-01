@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Car, Users, MapPin, AlertTriangle, TrendingUp, Battery } from 'lucide-react';
 import { RootState } from '../../store';
-import { fetchVehicles } from '../../store/slices/vehiclesSlice';
-import { fetchAnalytics } from '../../store/slices/analyticsSlice';
+import { getVehicles } from '../../store/slices/vehiclesSlice';
+import { fetchAnalytics, fetchVehicles } from '../../store/slices/analyticsSlice';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -45,7 +45,7 @@ const OperatorDashboard: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchVehicles() as any);
-    dispatch(fetchAnalytics({ timeRange: selectedTimeRange }) as any);
+    dispatch(fetchAnalytics() as any);
   }, [dispatch, selectedTimeRange]);
 
   const getStatusColor = (status: string) => {

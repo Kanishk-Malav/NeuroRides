@@ -7,6 +7,7 @@ const initialState: VehiclesState = {
   selectedVehicle: null,
   isLoading: false,
   error: null,
+  loading: false
 };
 
 // Async thunks

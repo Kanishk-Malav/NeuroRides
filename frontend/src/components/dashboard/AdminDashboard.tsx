@@ -9,8 +9,8 @@ import {
   Calendar, Download, Filter, RefreshCw 
 } from 'lucide-react';
 import { RootState } from '../../store';
-import { fetchAnalytics } from '../../store/slices/analyticsSlice';
-import { fetchVehicles } from '../../store/slices/vehiclesSlice';
+import { fetchAnalytics, fetchVehicles } from '../../store/slices/analyticsSlice';
+import { getVehicles } from '../../store/slices/vehiclesSlice';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
@@ -22,14 +22,14 @@ const AdminDashboard: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchAnalytics({ timeRange }) as any);
+    dispatch(fetchAnalytics() as any);
     dispatch(fetchVehicles() as any);
   }, [dispatch, timeRange]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
-      dispatch(fetchAnalytics({ timeRange }) as any),
+      dispatch(fetchAnalytics() as any),
       dispatch(fetchVehicles() as any)
     ]);
     setRefreshing(false);
