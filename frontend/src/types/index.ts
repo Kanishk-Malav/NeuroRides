@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 // User and Authentication Types
 export type UserRole = 'rider' | 'operator' | 'admin';
 
@@ -119,6 +121,7 @@ export interface Payment {
 }
 
 export interface FareEstimate {
+  duration_minutes: ReactNode;
   estimated_fare: number;
   fare_range: {
     min: number;

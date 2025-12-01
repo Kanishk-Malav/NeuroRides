@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Download, Receipt, Calendar, DollarSign, Filter } from 'lucide-react';
 import { RootState } from '../../store';
-import { fetchPaymentHistory } from '../../store/slices/paymentsSlice';
+import { getPaymentHistory } from '../../store/slices/paymentsSlice';
 import { Payment } from '../../types';
 
 const PaymentHistory: React.FC = () => {
@@ -15,7 +15,7 @@ const PaymentHistory: React.FC = () => {
   });
 
   useEffect(() => {
-    dispatch(fetchPaymentHistory() as any);
+    dispatch(getPaymentHistory() as any);
   }, [dispatch]);
 
   const filteredPayments = payments.filter(payment => {

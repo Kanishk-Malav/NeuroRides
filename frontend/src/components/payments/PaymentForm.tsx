@@ -105,17 +105,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       }
     }
 
+    // Build payload matching the processPayment action signature
     const paymentData = {
-      ride_id: rideId,
-      amount,
-      payment_method: paymentMethod,
-      ...(paymentMethod === 'card' && {
-        card_number: cardData.cardNumber.replace(/\s/g, ''),
-        expiry_date: cardData.expiryDate,
-        cvv: cardData.cvv,
-        cardholder_name: cardData.cardholderName,
-        save_card: saveCard
-      })
+      rideId,
+      paymentMethodId: paymentMethod === 'card' ? 'card' : 'wallet'
     };
 
     try {

@@ -2,6 +2,15 @@ import { io, Socket } from 'socket.io-client';
 import { WebSocketMessage, RideUpdate, VehicleUpdate } from '../types';
 
 class WebSocketService {
+  leaveRideTracking(rideId: string) {
+    throw new Error('Method not implemented.');
+  }
+  onRideUpdate(handleRideUpdate: (data: any) => void) {
+    throw new Error('Method not implemented.');
+  }
+  joinRideTracking(rideId: string) {
+    throw new Error('Method not implemented.');
+  }
   private socket: Socket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
