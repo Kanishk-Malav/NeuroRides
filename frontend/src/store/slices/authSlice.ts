@@ -1,5 +1,5 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { User, LoginCredentials, RegisterData } from '../../types';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+// import { User, LoginCredentials, RegisterData } from '../../types';
 import axios from 'axios';
 
 // Local RootState to avoid missing-module error for '../store'
@@ -17,6 +17,7 @@ type RootState = {
 // --------------------------
 interface AuthState {
   user: any | null;
+  token: string | null;
   isAuthenticated: boolean;
   loading: boolean;     
   error: string | null;
@@ -28,8 +29,9 @@ interface AuthState {
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
-  loading: false,       // <— MUST MATCH ABOVE
+  loading: false, // <— MUST MATCH ABOVE
   error: null,
+  token: null
 };
 
 // --------------------------

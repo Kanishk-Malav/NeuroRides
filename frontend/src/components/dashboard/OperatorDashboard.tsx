@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Car, Users, MapPin, AlertTriangle, TrendingUp, Battery } from 'lucide-react';
+import { Car, Users, AlertTriangle, TrendingUp, Battery } from 'lucide-react';
 import { RootState } from '../../store';
-import { getVehicles } from '../../store/slices/vehiclesSlice';
+// import { getVehicles } from '../../store/slices/vehiclesSlice';
 import { fetchAnalytics, fetchVehicles } from '../../store/slices/analyticsSlice';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Icon } from 'leaflet';
@@ -38,9 +38,9 @@ const vehicleIcons = {
 
 const OperatorDashboard: React.FC = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { vehicles, loading: vehiclesLoading } = useSelector((state: RootState) => state.vehicles);
-  const { analytics, loading: analyticsLoading } = useSelector((state: RootState) => state.analytics);
+  // const newLocal = useSelector((state: RootState) => state.auth);
+  const { vehicles } = useSelector((state: RootState) => state.vehicles);
+  const { analytics } = useSelector((state: RootState) => state.analytics);
   const [selectedTimeRange, setSelectedTimeRange] = useState<'today' | 'week' | 'month'>('today');
 
   useEffect(() => {

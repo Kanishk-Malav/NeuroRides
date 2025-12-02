@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { PaymentsState, PaymentMethod, Payment } from '../../types';
+import { PaymentsState, PaymentMethod } from '../../types';
 import { paymentsService } from '../../services/paymentsService';
 
 const initialState: PaymentsState = {

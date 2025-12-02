@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from './store';
 //import { checkAuthStatus } from './store/slices/authSlice';
 
@@ -23,11 +23,11 @@ import RideBookingForm from './components/rides/RideBookingForm';
 import RideTracker from './components/rides/RideTracker';
 
 // Payment Components
-import PaymentForm from './components/payments/PaymentForm';
+//import PaymentForm from './components/payments/PaymentForm';
 import PaymentHistory from './components/payments/PaymentHistory';
 
 function App() {
-  const dispatch = useDispatch();
+ // const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
   const getDashboardComponent = () => {

@@ -6,7 +6,7 @@ import { Car, MapPin, Clock, Phone, MessageCircle } from 'lucide-react';
 import { RootState } from '../../store';
 import { websocketService } from '../../services/websocketService';
 import { updateRideStatus } from '../../store/slices/ridesSlice';
-import { Ride, Vehicle } from '../../types';
+// import { Ride, Vehicle } from '../../types';
 import 'leaflet/dist/leaflet.css';
 
 interface RideTrackerProps {

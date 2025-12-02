@@ -1,22 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, Area, AreaChart
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, PieChart, Pie, Cell, Area, AreaChart
 } from 'recharts';
 import { 
-  TrendingUp, Users, Car, DollarSign, AlertTriangle, 
-  Calendar, Download, Filter, RefreshCw 
+  TrendingUp, Users, Car, DollarSign, AlertTriangle, Download, RefreshCw 
 } from 'lucide-react';
 import { RootState } from '../../store';
 import { fetchAnalytics, fetchVehicles } from '../../store/slices/analyticsSlice';
-import { getVehicles } from '../../store/slices/vehiclesSlice';
-
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+// import { getVehicles } from '../../store/slices/vehiclesSlice';
 
 const AdminDashboard: React.FC = () => {
   const dispatch = useDispatch();
-  const { analytics, loading: analyticsLoading } = useSelector((state: RootState) => state.analytics);
+  const { analytics } = useSelector((state: RootState) => state.analytics);
   const { vehicles } = useSelector((state: RootState) => state.vehicles);
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'year'>('month');
   const [refreshing, setRefreshing] = useState(false);
@@ -26,14 +22,14 @@ const AdminDashboard: React.FC = () => {
     dispatch(fetchVehicles() as any);
   }, [dispatch, timeRange]);
 
-  const handleRefresh = async () => {
+  async function handleRefresh() {
     setRefreshing(true);
     await Promise.all([
       dispatch(fetchAnalytics() as any),
       dispatch(fetchVehicles() as any)
     ]);
     setRefreshing(false);
-  };
+  }
 
   const exportData = () => {
     // In a real app, this would generate and download a comprehensive report

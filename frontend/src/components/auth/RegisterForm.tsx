@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { RootState } from '../../store';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const RegisterForm: React.FC = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  // const dispatch = useDispatch();
+  // const navigate = useNavigate();
   const auth = useSelector((state: RootState) => state.auth);
   const error = auth.error as unknown as string | null;
   let loading = false;

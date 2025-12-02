@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Download, Receipt, Calendar, DollarSign, Filter } from 'lucide-react';
+import { Download, Receipt, Calendar, DollarSign } from 'lucide-react';
 import { RootState } from '../../store';
 import { getPaymentHistory } from '../../store/slices/paymentsSlice';
-import { Payment } from '../../types';
+// import { Payment } from '../../types';
 
 const PaymentHistory: React.FC = () => {
   const dispatch = useDispatch();
