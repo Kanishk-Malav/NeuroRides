@@ -3,18 +3,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, Bell, User, LogOut, Settings } from 'lucide-react';
 import { RootState } from '../../store';
-import { logout } from '../../store/slices/authSlice';
+import { logoutUser } from '../../store/slices/authSlice';
 import { toggleSidebar } from '../../store/slices/uiSlice';
 
 const Navbar: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>(); // Use any or AppDispatch to avoid thunk type issues
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { sidebarOpen } = useSelector((state: RootState) => state.ui);
   const { unreadCount } = useSelector((state: RootState) => state.notifications);
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutUser());
     navigate('/login');
   };
 
@@ -39,7 +39,7 @@ const Navbar: React.FC = () => {
                 )}
               </button>
             )}
-            
+
             <Link to="/" className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="h-8 w-8 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-lg flex items-center justify-center">

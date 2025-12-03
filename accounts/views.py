@@ -6,9 +6,8 @@ from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
-# JWT imports disabled for now
-# from rest_framework_simplejwt.tokens import RefreshToken
-# from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib.auth import login, logout
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -31,7 +30,7 @@ from .serializers import (
 from .permissions import IsOwner, CanManageUsers
 
 
-class CustomTokenObtainPairView(APIView):  # Temporarily changed from TokenObtainPairView
+class CustomTokenObtainPairView(TokenObtainPairView):
     """Custom JWT token obtain view with additional user data."""
     
     def post(self, request, *args, **kwargs):

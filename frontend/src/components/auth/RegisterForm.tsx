@@ -1,23 +1,17 @@
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { RootState } from '../../store';
+import { useSelector, useDispatch } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+import { RootState, AppDispatch } from '../../store';
+import { registerUser } from '../../store/slices/authSlice';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const RegisterForm: React.FC = () => {
-  // const dispatch = useDispatch();
-  // const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const auth = useSelector((state: RootState) => state.auth);
-  const error = auth.error as unknown as string | null;
-  let loading = false;
-  if ('loading' in auth) {
-    loading = (auth as any).loading;
-  } else if ('status' in auth) {
-    loading = (auth as any).status === 'loading';
-  } else if ('isLoading' in auth) {
-    loading = (auth as any).isLoading;
-  }
-  
+  const error = auth.error;
+  const loading = auth.isLoading;
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -33,32 +27,47 @@ const RegisterForm: React.FC = () => {
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
-    
+
     if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match';
     }
-    
+
     if (formData.password.length < 8) {
       errors.password = 'Password must be at least 8 characters long';
     }
-    
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
-    
+
     if (!/^\+?[\d\s-()]+$/.test(formData.phoneNumber)) {
       errors.phoneNumber = 'Please enter a valid phone number';
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
+    }
+
+    const payload = {
+      username: formData.email.split('@')[0], // Generate username from email
+      email: formData.email,
+      password: formData.password,
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      phone_number: formData.phoneNumber,
+      role: formData.role
+    };
+
+    const resultAction = await dispatch(registerUser(payload));
+    if (registerUser.fulfilled.match(resultAction)) {
+      navigate('/dashboard');
     }
   };
 
@@ -67,7 +76,7 @@ const RegisterForm: React.FC = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
-    
+
     // Clear validation error when user starts typing
     if (validationErrors[e.target.name]) {
       setValidationErrors({
@@ -94,7 +103,7 @@ const RegisterForm: React.FC = () => {
             </Link>
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -129,7 +138,7 @@ const RegisterForm: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email Address
@@ -149,7 +158,7 @@ const RegisterForm: React.FC = () => {
                 <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
                 Phone Number
@@ -168,7 +177,7 @@ const RegisterForm: React.FC = () => {
                 <p className="mt-1 text-sm text-red-600">{validationErrors.phoneNumber}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="role" className="block text-sm font-medium text-gray-700">
                 Account Type
@@ -185,7 +194,7 @@ const RegisterForm: React.FC = () => {
                 <option value="operator">Operator</option>
               </select>
             </div>
-            
+
             <div className="relative">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
@@ -216,7 +225,7 @@ const RegisterForm: React.FC = () => {
                 <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
               )}
             </div>
-            
+
             <div className="relative">
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                 Confirm Password

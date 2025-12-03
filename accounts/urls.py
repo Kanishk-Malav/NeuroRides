@@ -10,8 +10,8 @@ app_name = 'accounts'
 urlpatterns = [
     # Authentication (simplified for now)
     path('auth/register/', views.UserRegistrationView.as_view(), name='register'),
-    # path('auth/login/', views.CustomTokenObtainPairView.as_view(), name='login'),
-    # path('auth/logout/', views.LogoutView.as_view(), name='logout'),
+    path('auth/login/', views.CustomTokenObtainPairView.as_view(), name='login'),
+    path('auth/logout/', views.LogoutView.as_view(), name='logout'),
     
     # Email verification
     path('auth/verify-email/<str:token>/', views.EmailVerificationView.as_view(), name='verify-email'),

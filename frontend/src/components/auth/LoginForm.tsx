@@ -3,17 +3,17 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from '../../store';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-
-// ⬇️ apne auth slice / thunk ka actual path & name yahan daalo
-// example: src/store/authSlice.ts ya src/services/authSlice.ts
 import { loginUser } from '../../store/slices/authSlice';
+
 import type { AppDispatch } from '../../store';
 
 const LoginForm: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const { isLoading, error } = useSelector((state: RootState) => state.auth);
+  const auth = useSelector((state: RootState) => state.auth);
+  const loading = auth.isLoading;
+  const error = auth.error;
 
   const [formData, setFormData] = useState({
     email: '',
@@ -21,36 +21,32 @@ const LoginForm: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
 
+  // ⭐ SAME handleChange (jo tumne bola tha)
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  // ⭐ Ab yeh actual login karega + redirect karega
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // agar email / password empty ho to basic check
-    if (!formData.email || !formData.password) {
-      return;
+    // sirf extra safety
+    if (!formData.email || !formData.password) return;
+
+    // debugging ke liye
+    console.log('🔥 Login submit clicked', formData);
+
+    const resultAction = await dispatch(loginUser(formData) as any);
+
+    if (loginUser.fulfilled.match(resultAction)) {
+      // ✅ Login success → dusri page pe le jao
+      navigate('/dashboard'); // yahan apni desired route daal sakta hai
+    } else {
+      console.error('Login failed:', resultAction);
     }
-
-    try {
-      // 🔥 Redux thunk ko call karo
-      const resultAction = await dispatch(loginUser(formData) as any);
-
-      // agar tumne createAsyncThunk use kiya hai to yeh pattern kaam karega
-      if (loginUser.fulfilled.match(resultAction)) {
-        // login success → kisi protected page pe bhej do
-        navigate('/dashboard'); // yahan apna path daal sakta hai (e.g. /, /rides, etc.)
-      } else {
-        // error slice me handle ho raha hoga (auth.error)
-        console.error('Login failed:', resultAction);
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
   };
 
   return (
@@ -70,7 +66,7 @@ const LoginForm: React.FC = () => {
             </Link>
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
@@ -136,10 +132,10 @@ const LoginForm: React.FC = () => {
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 'Sign in'
