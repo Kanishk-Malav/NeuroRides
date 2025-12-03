@@ -19,7 +19,7 @@ const RegisterForm: React.FC = () => {
     firstName: '',
     lastName: '',
     phoneNumber: '',
-    role: 'rider' as 'rider' | 'operator'
+    role: 'rider' as 'rider'
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -59,10 +59,11 @@ const RegisterForm: React.FC = () => {
       username: formData.email.split('@')[0], // Generate username from email
       email: formData.email,
       password: formData.password,
+      password_confirm: formData.confirmPassword,
       first_name: formData.firstName,
       last_name: formData.lastName,
       phone_number: formData.phoneNumber,
-      role: formData.role
+      role: 'rider' as 'rider'
     };
 
     const resultAction = await dispatch(registerUser(payload));
@@ -178,22 +179,7 @@ const RegisterForm: React.FC = () => {
               )}
             </div>
 
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                Account Type
-              </label>
-              <select
-                id="role"
-                name="role"
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                value={formData.role}
-                onChange={handleChange}
-              >
-                <option value="rider">Rider</option>
-                <option value="operator">Operator</option>
-              </select>
-            </div>
+            {/* Role selection removed as public registration is restricted to riders */}
 
             <div className="relative">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
