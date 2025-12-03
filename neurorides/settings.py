@@ -56,8 +56,9 @@ THIRD_PARTY_APPS = [
     "rest_framework",
     "django_celery_beat",
     "channels",
-    # "rest_framework_simplejwt",  # if you want to disable JWT auth
-    # "corsheaders",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
+    "corsheaders",
     # "drf_spectacular",
 ]
 
@@ -80,11 +81,11 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    # "whitenoise.middleware.WhiteNoiseMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "accounts.middleware.SecurityHeadersMiddleware",
     "accounts.middleware.RateLimitMiddleware",
-    # "corsheaders.middleware.CorsMiddleware",
-    "accounts.middleware.CORSMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    # "accounts.middleware.CORSMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
