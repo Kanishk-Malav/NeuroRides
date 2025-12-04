@@ -205,3 +205,58 @@ def _is_encrypted(data: str) -> bool:
 
 def _is_masked(data: str) -> bool:
     return '*' in data or 'X' in data
+
+
+class PaymentAuditLogger:
+    """Handles audit logging for payment operations."""
+    
+    def __init__(self):
+        self.logger = logging.getLogger('payments.audit')
+    
+    def log_encryption_event(self, operation, field_name, success, error_message=None):
+        """Log encryption/decryption events."""
+        log_data = {
+            'operation': operation,
+            'field_name': field_name,
+            'success': success,
+        }
+        if error_message:
+            log_data['error'] = error_message
+        
+        if success:
+            self.logger.info(f"Encryption event: {operation} {field_name}", extra=log_data)
+        else:
+            self.logger.error(f"Encryption event failed: {operation} {field_name}", extra=log_data)
+    
+    def log_payment_action(self, user_id, action, payment_id=None, amount=None, metadata=None):
+        """Log payment-related actions."""
+        log_data = {
+            'user_id': user_id,
+            'action': action,
+        }
+        if payment_id:
+            log_data['payment_id'] = payment_id
+        if amount:
+            log_data['amount'] = str(amount)
+        if metadata:
+            log_data['metadata'] = metadata
+        
+        self.logger.info(f"Payment action: {action} by user {user_id}", extra=log_data)
+    
+    def log_pci_compliance_check(self, check_type, compliant, issues=None):
+        """Log PCI compliance checks."""
+        log_data = {
+            'check_type': check_type,
+            'compliant': compliant,
+        }
+        if issues:
+            log_data['issues'] = issues
+        
+        if compliant:
+            self.logger.info(f"PCI compliance check passed: {check_type}", extra=log_data)
+        else:
+            self.logger.warning(f"PCI compliance check failed: {check_type}", extra=log_data)
+
+
+# Global audit logger instance
+payment_audit_logger = PaymentAuditLogger()

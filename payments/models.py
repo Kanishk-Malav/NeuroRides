@@ -153,10 +153,6 @@ class PaymentGateway(models.Model):
                 )
                 return ''
         return ''
-    
-    def get_webhook_secret(self):
-        """Get decrypted webhook secret."""
-        return self.decrypt_field(self.webhook_secret)
 
 
 class PaymentMethod(models.Model):
@@ -362,10 +358,13 @@ class Payment(models.Model):
         return f"Payment {self.id} - {self.amount} {self.currency} ({self.status})"
     
     def save(self, *args, **kwargs):
-        if self.status == self.Status.COMPLETED and not self.processed_at:
-            self.processed_at = timezone.now()
+        from django.db import transaction
         
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            if self.status == self.Status.COMPLETED and not self.processed_at:
+                self.processed_at = timezone.now()
+            
+            super().save(*args, **kwargs)
 
 
 class PaymentRefund(models.Model):

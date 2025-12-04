@@ -192,6 +192,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    "EXCEPTION_HANDLER": "neurorides.exception_handlers.custom_exception_handler",
 }
 
 SIMPLE_JWT = {

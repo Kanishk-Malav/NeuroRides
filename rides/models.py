@@ -268,91 +268,111 @@ class Ride(models.Model):
     
     def assign_vehicle(self, vehicle):
         """Assign a vehicle to this ride."""
+        from django.db import transaction
+        from neurorides.exceptions import InvalidStateTransitionError
+        
         if self.status != self.Status.REQUESTED:
-            raise ValueError("Can only assign vehicle to requested rides")
+            raise InvalidStateTransitionError("Can only assign vehicle to requested rides")
         
-        self.vehicle = vehicle
-        self.status = self.Status.ASSIGNED
-        self.assigned_at = timezone.now()
-        self.save(update_fields=['vehicle', 'status', 'assigned_at'])
-        
-        # Update vehicle status
-        vehicle.assign_to_ride(self)
+        with transaction.atomic():
+            self.vehicle = vehicle
+            self.status = self.Status.ASSIGNED
+            self.assigned_at = timezone.now()
+            self.save(update_fields=['vehicle', 'status', 'assigned_at'])
+            
+            # Update vehicle status
+            vehicle.assign_to_ride(self)
     
     def start_pickup(self):
         """Mark ride as en route to pickup."""
-        if self.status != self.Status.ASSIGNED:
-            raise ValueError("Can only start pickup for assigned rides")
+        from django.db import transaction
+        from neurorides.exceptions import InvalidStateTransitionError
         
-        self.status = self.Status.PICKUP
-        self.pickup_started_at = timezone.now()
-        self.save(update_fields=['status', 'pickup_started_at'])
+        if self.status != self.Status.ASSIGNED:
+            raise InvalidStateTransitionError("Can only start pickup for assigned rides")
+        
+        with transaction.atomic():
+            self.status = self.Status.PICKUP
+            self.pickup_started_at = timezone.now()
+            self.save(update_fields=['status', 'pickup_started_at'])
     
     def confirm_pickup(self):
         """Confirm passenger pickup and start ride."""
+        from django.db import transaction
+        from neurorides.exceptions import InvalidStateTransitionError
+        
         if self.status != self.Status.PICKUP:
-            raise ValueError("Can only confirm pickup for rides en route to pickup")
+            raise InvalidStateTransitionError("Can only confirm pickup for rides en route to pickup")
         
-        self.status = self.Status.IN_PROGRESS
-        self.picked_up_at = timezone.now()
-        self.save(update_fields=['status', 'picked_up_at'])
-        
-        # Update vehicle status
-        if self.vehicle:
-            self.vehicle.start_ride()
+        with transaction.atomic():
+            self.status = self.Status.IN_PROGRESS
+            self.picked_up_at = timezone.now()
+            self.save(update_fields=['status', 'picked_up_at'])
+            
+            # Update vehicle status
+            if self.vehicle:
+                self.vehicle.start_ride()
     
     def complete_ride(self, actual_distance_km=None, final_fare=None):
         """Complete the ride."""
+        from django.db import transaction
+        from neurorides.exceptions import InvalidStateTransitionError
+        
         if self.status != self.Status.IN_PROGRESS:
-            raise ValueError("Can only complete rides in progress")
+            raise InvalidStateTransitionError("Can only complete rides in progress")
         
-        self.status = self.Status.COMPLETED
-        self.completed_at = timezone.now()
-        
-        if actual_distance_km is not None:
-            self.actual_distance_km = actual_distance_km
-        
-        if final_fare is not None:
-            self.final_fare = final_fare
-        else:
-            # Use fare estimate if no final fare provided
-            self.final_fare = self.fare_estimate
-        
-        # Calculate actual duration
-        if self.picked_up_at:
-            duration = self.completed_at - self.picked_up_at
-            self.actual_duration_minutes = int(duration.total_seconds() / 60)
-        
-        self.save(update_fields=[
-            'status', 'completed_at', 'actual_distance_km', 
-            'final_fare', 'actual_duration_minutes'
-        ])
-        
-        # Update vehicle status and metrics
-        if self.vehicle:
-            self.vehicle.complete_ride(
-                ride_distance=self.actual_distance_km or 0,
-                ride_revenue=self.final_fare or 0
-            )
+        with transaction.atomic():
+            self.status = self.Status.COMPLETED
+            self.completed_at = timezone.now()
+            
+            if actual_distance_km is not None:
+                self.actual_distance_km = actual_distance_km
+            
+            if final_fare is not None:
+                self.final_fare = final_fare
+            else:
+                # Use fare estimate if no final fare provided
+                self.final_fare = self.fare_estimate
+            
+            # Calculate actual duration
+            if self.picked_up_at:
+                duration = self.completed_at - self.picked_up_at
+                self.actual_duration_minutes = int(duration.total_seconds() / 60)
+            
+            self.save(update_fields=[
+                'status', 'completed_at', 'actual_distance_km', 
+                'final_fare', 'actual_duration_minutes'
+            ])
+            
+            # Update vehicle status and metrics
+            if self.vehicle:
+                self.vehicle.complete_ride(
+                    ride_distance=self.actual_distance_km or 0,
+                    ride_revenue=self.final_fare or 0
+                )
     
     def cancel_ride(self, reason, notes='', cancelled_by=None):
         """Cancel the ride."""
+        from django.db import transaction
+        from neurorides.exceptions import InvalidStateTransitionError
+        
         if not self.can_be_cancelled:
-            raise ValueError(f"Cannot cancel ride with status {self.status}")
+            raise InvalidStateTransitionError(f"Cannot cancel ride with status {self.status}")
         
-        self.status = self.Status.CANCELLED
-        self.cancelled_at = timezone.now()
-        self.cancellation_reason = reason
-        self.cancellation_notes = notes
-        
-        self.save(update_fields=[
-            'status', 'cancelled_at', 'cancellation_reason', 'cancellation_notes'
-        ])
-        
-        # Free up the vehicle if assigned
-        if self.vehicle and self.vehicle.status in ['assigned', 'in_ride']:
-            self.vehicle.status = 'idle'
-            self.vehicle.save(update_fields=['status'])
+        with transaction.atomic():
+            self.status = self.Status.CANCELLED
+            self.cancelled_at = timezone.now()
+            self.cancellation_reason = reason
+            self.cancellation_notes = notes
+            
+            self.save(update_fields=[
+                'status', 'cancelled_at', 'cancellation_reason', 'cancellation_notes'
+            ])
+            
+            # Free up the vehicle if assigned
+            if self.vehicle and self.vehicle.status in ['assigned', 'in_ride']:
+                self.vehicle.status = 'idle'
+                self.vehicle.save(update_fields=['status'])
 
 
 class RideFareCalculator:

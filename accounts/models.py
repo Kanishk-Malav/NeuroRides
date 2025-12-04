@@ -181,5 +181,3 @@ class UserProfile(models.Model):
             self.country
         ]
         return ', '.join([part for part in address_parts if part])
-
-
