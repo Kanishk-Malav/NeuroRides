@@ -81,5 +81,5 @@ EXPOSE 8000
 # Use entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Default command
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "gevent", "--worker-connections", "1000", "--max-requests", "1000", "--max-requests-jitter", "100", "--timeout", "30", "--keep-alive", "2", "neurorides.wsgi:application"]
+# Default command (using shell form to allow variable expansion for $PORT)
+CMD gunicorn neurorides.asgi:application --bind 0.0.0.0:${PORT:-8000} --workers 4 --worker-class uvicorn.workers.UvicornWorker --timeout 120 --access-logfile - --error-logfile -
