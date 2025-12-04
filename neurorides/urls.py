@@ -11,7 +11,9 @@ def trigger_error(request):
     division_by_zero = 1 / 0
 
 urlpatterns = [
-
+    # Health checks (must be first for quick response)
+    path('', include('neurorides.health_urls')),
+    
     path('sentry-debug/', trigger_error),
     # Admin
     path('admin/', admin.site.urls),

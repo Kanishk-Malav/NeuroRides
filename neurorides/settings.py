@@ -288,33 +288,39 @@ CELERY_SEND_TASK_EVENTS = True
 CELERY_SEND_EVENTS = True
 CELERY_TASK_SEND_SENT_EVENT = True
 
-from dispatch.celery_config import DISPATCH_TASK_ROUTES, DISPATCH_BEAT_SCHEDULE
-from realtime.celery_config import REALTIME_TASK_ROUTES, REALTIME_BEAT_SCHEDULE
-from analytics.celery_config import ANALYTICS_TASK_ROUTES, ANALYTICS_BEAT_SCHEDULE
-from fleet.celery_config import FLEET_TASK_ROUTES, FLEET_BEAT_SCHEDULE
-from payments.celery_config import PAYMENTS_TASK_ROUTES, PAYMENTS_BEAT_SCHEDULE
+# Lazy import Celery configs to avoid startup delays
+try:
+    from dispatch.celery_config import DISPATCH_TASK_ROUTES, DISPATCH_BEAT_SCHEDULE
+    from realtime.celery_config import REALTIME_TASK_ROUTES, REALTIME_BEAT_SCHEDULE
+    from analytics.celery_config import ANALYTICS_TASK_ROUTES, ANALYTICS_BEAT_SCHEDULE
+    from fleet.celery_config import FLEET_TASK_ROUTES, FLEET_BEAT_SCHEDULE
+    from payments.celery_config import PAYMENTS_TASK_ROUTES, PAYMENTS_BEAT_SCHEDULE
 
-CELERY_TASK_ROUTES = {
-    **DISPATCH_TASK_ROUTES,
-    **REALTIME_TASK_ROUTES,
-    **ANALYTICS_TASK_ROUTES,
-    **FLEET_TASK_ROUTES,
-    **PAYMENTS_TASK_ROUTES,
-    "neurorides.celery.health_check": {"queue": "default"},
-    "neurorides.celery.debug_task": {"queue": "default"},
-}
+    CELERY_TASK_ROUTES = {
+        **DISPATCH_TASK_ROUTES,
+        **REALTIME_TASK_ROUTES,
+        **ANALYTICS_TASK_ROUTES,
+        **FLEET_TASK_ROUTES,
+        **PAYMENTS_TASK_ROUTES,
+        "neurorides.celery.health_check": {"queue": "default"},
+        "neurorides.celery.debug_task": {"queue": "default"},
+    }
 
-CELERY_BEAT_SCHEDULE = {
-    **DISPATCH_BEAT_SCHEDULE,
-    **REALTIME_BEAT_SCHEDULE,
-    **ANALYTICS_BEAT_SCHEDULE,
-    **FLEET_BEAT_SCHEDULE,
-    **PAYMENTS_BEAT_SCHEDULE,
-    "system-health-check": {
-        "task": "neurorides.celery.health_check",
-        "schedule": crontab(minute="*/5"),
-    },
-}
+    CELERY_BEAT_SCHEDULE = {
+        **DISPATCH_BEAT_SCHEDULE,
+        **REALTIME_BEAT_SCHEDULE,
+        **ANALYTICS_BEAT_SCHEDULE,
+        **FLEET_BEAT_SCHEDULE,
+        **PAYMENTS_BEAT_SCHEDULE,
+        "system-health-check": {
+            "task": "neurorides.celery.health_check",
+            "schedule": crontab(minute="*/5"),
+        },
+    }
+except ImportError:
+    # Fallback if celery configs are not available
+    CELERY_TASK_ROUTES = {}
+    CELERY_BEAT_SCHEDULE = {}
 
 # -------------------------------------------------
 # Payments / Email
