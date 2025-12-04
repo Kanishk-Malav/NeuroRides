@@ -8,11 +8,11 @@ ENV PYTHONUNBUFFERED=1
 # Install system dependencies for building
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        build-essential \
-        libpq-dev \
-        libgdal-dev \
-        gdal-bin \
-        curl \
+    build-essential \
+    libpq-dev \
+    libgdal-dev \
+    gdal-bin \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
@@ -38,11 +38,11 @@ RUN groupadd -r app && useradd -r -g app app
 # Install runtime dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        postgresql-client \
-        gdal-bin \
-        libgdal-dev \
-        curl \
-        nginx \
+    postgresql-client \
+    gdal-bin \
+    libgdal-dev \
+    curl \
+    nginx \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder stage
@@ -81,5 +81,5 @@ EXPOSE 8000
 # Use entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Default command (using shell form to allow variable expansion for $PORT)
-CMD gunicorn neurorides.asgi:application --bind 0.0.0.0:${PORT:-8000} --workers 4 --worker-class uvicorn.workers.UvicornWorker --timeout 120 --access-logfile - --error-logfile -
+# Default command
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "gevent", "--worker-connections", "1000", "--max-requests", "1000", "--max-requests-jitter", "100", "--timeout", "30", "--keep-alive", "2", "neurorides.wsgi:application"]
