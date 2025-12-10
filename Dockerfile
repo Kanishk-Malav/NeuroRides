@@ -83,3 +83,15 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # Default command
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "gevent", "--worker-connections", "1000", "--max-requests", "1000", "--max-requests-jitter", "100", "--timeout", "30", "--keep-alive", "2", "neurorides.wsgi:application"]
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 8080
+CMD ["npm", "start"]

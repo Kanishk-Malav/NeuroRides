@@ -33,7 +33,7 @@ SECRET_KEY = os.environ.get(
     env("SECRET_KEY", default="dev-fallback-secret-key"),
 )
 
-DEBUG = env("DEBUG")
+DEBUG = env.bool("DEBUG", default=False)
 
 # In case ALLOWED_HOSTS env missing, allow all (so Render works)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
@@ -49,7 +49,7 @@ DJANGO_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # "django.contrib.gis",  # PostGIS (disabled for now)
+     "django.contrib.gis", 
 ]
 
 THIRD_PARTY_APPS = [
@@ -59,7 +59,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
-    # "drf_spectacular",
+     "drf_spectacular",
 ]
 
 LOCAL_APPS = [
@@ -85,7 +85,7 @@ MIDDLEWARE = [
     "accounts.middleware.SecurityHeadersMiddleware",
     "accounts.middleware.RateLimitMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    # "accounts.middleware.CORSMiddleware",
+     "accounts.middleware.CORSMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -124,10 +124,10 @@ ASGI_APPLICATION = "neurorides.asgi.application"
 # -------------------------------------------------
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": env.db(
+        "DATABASE_URL",
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+    )
 }
 
 # -------------------------------------------------
