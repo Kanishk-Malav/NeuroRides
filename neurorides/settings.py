@@ -1,13 +1,16 @@
 """
 Django settings for NeuroRides project.
-Simplified & Render-friendly version.
+Optimized for Google Cloud Run + Neon PostgreSQL + Upstash Redis
 """
 
 import os
 from pathlib import Path
 from datetime import timedelta
+from urllib.parse import urlparse
 
 import environ
+import dj_database_url
+import redis
 from celery.schedules import crontab
 from kombu import Queue
 
@@ -35,8 +38,11 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = env.bool("DEBUG", default=False)
 
-# In case ALLOWED_HOSTS env missing, allow all (so Render works)
+# Cloud Run compatible
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
+
+# FIX: Prevent trailing slash redirect for OPTIONS requests
+APPEND_SLASH = False
 
 # -------------------------------------------------
 # Apps
@@ -49,7 +55,7 @@ DJANGO_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-     "django.contrib.gis", 
+    "django.contrib.gis",
 ]
 
 THIRD_PARTY_APPS = [
@@ -59,7 +65,9 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
-     "drf_spectacular",
+    "drf_spectacular",
+    "django_redis",
+    "whitenoise.runserver_nostatic",
 ]
 
 LOCAL_APPS = [
@@ -76,16 +84,15 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 # -------------------------------------------------
-# Middleware
+# Middleware - FIXED ORDER FOR CORS
 # -------------------------------------------------
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # MUST BE BEFORE CommonMiddleware
     "accounts.middleware.SecurityHeadersMiddleware",
     "accounts.middleware.RateLimitMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
-     "accounts.middleware.CORSMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -118,130 +125,228 @@ WSGI_APPLICATION = "neurorides.wsgi.application"
 ASGI_APPLICATION = "neurorides.asgi.application"
 
 # -------------------------------------------------
-# Database
-# (sqlite for now – safe for local & simple Render deploy)
-# Later you can swap to Postgres/Neon using env vars.
+# CORS - FIXED FOR CLOUD RUN + NETLIFY
 # -------------------------------------------------
 
-DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-    )
-}
+# Your Netlify frontend
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[
+    "https://neurorides.netlify.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+])
 
-# -------------------------------------------------
-# Auth
-# -------------------------------------------------
-
-AUTH_USER_MODEL = "accounts.User"
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-        "OPTIONS": {"min_length": 8},
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
-
-# -------------------------------------------------
-# I18N
-# -------------------------------------------------
-
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
-USE_I18N = True
-USE_TZ = True
-
-# -------------------------------------------------
-# Static & Media
-# -------------------------------------------------
-
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# -------------------------------------------------
-# DRF / JWT
-# -------------------------------------------------
-
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
-    ],
-    "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
-    ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 20,
-    "EXCEPTION_HANDLER": "neurorides.exception_handlers.custom_exception_handler",
-}
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=env.int("JWT_ACCESS_TOKEN_LIFETIME", default=60)
-    ),
-    "REFRESH_TOKEN_LIFETIME": timedelta(
-        minutes=env.int("JWT_REFRESH_TOKEN_LIFETIME", default=1440)
-    ),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
-    "UPDATE_LAST_LOGIN": True,
-    "ALGORITHM": "HS256",
-    "SIGNING_KEY": SECRET_KEY,
-    "VERIFYING_KEY": None,
-    "AUTH_HEADER_TYPES": ("Bearer",),
-    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
-    "USER_ID_FIELD": "id",
-    "USER_ID_CLAIM": "user_id",
-}
-
-# -------------------------------------------------
-# CORS (kept flexible)
-# -------------------------------------------------
-
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 CORS_ALLOW_CREDENTIALS = True
 
+# CSRF trusted origins
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[
+    "https://neurorides.netlify.app",
+    "https://*.cloudrun.app",
+])
+
+# Additional CORS settings for OPTIONS preflight
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "x-api-version",
+]
+
+CORS_EXPOSE_HEADERS = [
+    "content-type",
+    "x-api-version",
+]
+
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
+
 # -------------------------------------------------
-# Redis / Channels / Celery
+# Database - NEON POSTGRESQL
+# -------------------------------------------------
+
+# Parse DATABASE_URL from Neon
+DATABASE_URL = env("DATABASE_URL", default=None)
+
+if DATABASE_URL:
+    # Configure for Neon PostgreSQL with SSL
+    db_config = dj_database_url.parse(DATABASE_URL)
+    
+    # Add SSL configuration for Neon
+    db_config['OPTIONS'] = {
+        'sslmode': 'require',
+        'sslrootcert': None,
+    }
+    
+    # Optimize for Cloud Run (connection pooling)
+    db_config['CONN_MAX_AGE'] = 600  # 10 minutes
+    db_config['CONN_HEALTH_CHECKS'] = True
+    db_config['ATOMIC_REQUESTS'] = False
+    
+    # Enable statement timeout
+    db_config['OPTIONS']['connect_timeout'] = 5
+    db_config['OPTIONS']['options'] = '-c statement_timeout=30000'
+    
+    DATABASES = {
+        "default": db_config
+    }
+else:
+    # Fallback to SQLite for local development
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
+# -------------------------------------------------
+# Redis Cache & Connection - UPSTASH COMPATIBLE
 # -------------------------------------------------
 
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [REDIS_URL],
-        },
-    },
-}
+def get_redis_config(redis_url):
+    """Parse Redis URL for Upstash SSL support"""
+    parsed = urlparse(redis_url)
+    
+    # Detect Upstash
+    is_upstash = 'upstash.io' in parsed.hostname or parsed.scheme == 'rediss'
+    
+    config = {
+        'host': parsed.hostname,
+        'port': parsed.port or (6379 if not is_upstash else 6380),
+        'password': parsed.password,
+    }
+    
+    if is_upstash:
+        config['ssl'] = True
+        config['ssl_cert_reqs'] = None  # Required for Upstash
+    
+    # Database number
+    if parsed.path and len(parsed.path) > 1:
+        try:
+            config['db'] = int(parsed.path[1:])
+        except ValueError:
+            config['db'] = 0
+    else:
+        config['db'] = 0
+    
+    return config, is_upstash
 
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
+redis_config, is_upstash = get_redis_config(REDIS_URL)
+
+# Django Cache Configuration
+if is_upstash:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "SSL": True,
+                "SSL_CERT_REQS": None,
+                "CONNECTION_POOL_KWARGS": {
+                    "ssl_cert_reqs": None,
+                    "retry_on_timeout": True,
+                    "max_connections": 50,
+                },
+                "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+                "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+                "IGNORE_EXCEPTIONS": True,  # Graceful cache degradation
+                "SOCKET_CONNECT_TIMEOUT": 5,
+                "SOCKET_TIMEOUT": 5,
+            },
+            "KEY_PREFIX": "neurorides",
+            "TIMEOUT": 300,
+            "VERSION": 1,
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+                "IGNORE_EXCEPTIONS": True,
+            },
+            "KEY_PREFIX": "neurorides",
+        }
+    }
+
+# Session cache
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+# Rate limiting cache
+RATELIMIT_USE_CACHE = "default"
+RATELIMIT_ENABLE = True
+
+# -------------------------------------------------
+# Channels (WebSockets) - UPSTASH COMPATIBLE
+# -------------------------------------------------
+
+if is_upstash:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [{
+                    'address': f"{redis_config['host']}:{redis_config['port']}",
+                    'password': redis_config.get('password'),
+                    'ssl': True,
+                    'ssl_cert_reqs': None,
+                }],
+                "prefix": "asgi:",
+                "capacity": 1500,
+                "expiry": 10,
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [(redis_config['host'], redis_config['port'])],
+                "prefix": "asgi:",
+            },
+        },
+    }
+
+# -------------------------------------------------
+# Celery - UPSTASH COMPATIBLE
+# -------------------------------------------------
+
+# Separate databases for Celery
+CELERY_BROKER_URL = REDIS_URL.replace('/0', '/1') if '/0' in REDIS_URL else f"{REDIS_URL}/1"
+CELERY_RESULT_BACKEND = REDIS_URL.replace('/0', '/2') if '/0' in REDIS_URL else f"{REDIS_URL}/2"
+
+# SSL configuration for Celery with Upstash
+if is_upstash:
+    CELERY_BROKER_USE_SSL = {
+        'ssl_cert_reqs': None,
+        'ssl_ca_certs': None,
+    }
+    CELERY_REDIS_BACKEND_USE_SSL = CELERY_BROKER_USE_SSL
+
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = TIME_ZONE
+CELERY_TIMEZONE = TIME_ZONE = "UTC"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 CELERY_TASK_ALWAYS_EAGER = False
@@ -288,7 +393,7 @@ CELERY_SEND_TASK_EVENTS = True
 CELERY_SEND_EVENTS = True
 CELERY_TASK_SEND_SENT_EVENT = True
 
-# Lazy import Celery configs to avoid startup delays
+# Dynamic Celery imports (safe fallback)
 try:
     from dispatch.celery_config import DISPATCH_TASK_ROUTES, DISPATCH_BEAT_SCHEDULE
     from realtime.celery_config import REALTIME_TASK_ROUTES, REALTIME_BEAT_SCHEDULE
@@ -318,12 +423,116 @@ try:
         },
     }
 except ImportError:
-    # Fallback if celery configs are not available
     CELERY_TASK_ROUTES = {}
     CELERY_BEAT_SCHEDULE = {}
 
 # -------------------------------------------------
-# Payments / Email
+# Auth
+# -------------------------------------------------
+
+AUTH_USER_MODEL = "accounts.User"
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 8},
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
+]
+
+# -------------------------------------------------
+# DRF / JWT
+# -------------------------------------------------
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ],
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+        "rest_framework.parsers.FormParser",
+        "rest_framework.parsers.MultiPartParser",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+    "EXCEPTION_HANDLER": "neurorides.exception_handlers.custom_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/day",
+        "user": "1000/day",
+    },
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=env.int("JWT_ACCESS_TOKEN_LIFETIME", default=60)
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        minutes=env.int("JWT_REFRESH_TOKEN_LIFETIME", default=1440)
+    ),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "VERIFYING_KEY": None,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+    "JTI_CLAIM": "jti",
+    "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
+    "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),
+    "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
+}
+
+# -------------------------------------------------
+# Static & Media
+# -------------------------------------------------
+
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+# WhiteNoise for static files
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_ALLOW_ALL_ORIGINS = True
+WHITENOISE_MAX_AGE = 31536000  # 1 year
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+USE_I18N = True
+USE_TZ = True
+LANGUAGE_CODE = "en-us"
+
+# -------------------------------------------------
+# Payments
 # -------------------------------------------------
 
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "pk_test_fallback_key")
@@ -333,6 +542,13 @@ STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_fallback_
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_fallback_key")
 RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "fallback_secret")
 
+# Payment Encryption Key
+PAYMENT_ENCRYPTION_KEY = env("PAYMENT_ENCRYPTION_KEY", default=None)
+
+# -------------------------------------------------
+# Email
+# -------------------------------------------------
+
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
@@ -340,71 +556,85 @@ EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "test@example.com")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "testpassword")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-# Payment Encryption Key (optional – encryption.py will fall back to SECRET_KEY)
-PAYMENT_ENCRYPTION_KEY = env("PAYMENT_ENCRYPTION_KEY", default=None)
+SERVER_EMAIL = EMAIL_HOST_USER
 
 # -------------------------------------------------
-# Security
+# Security Headers
 # -------------------------------------------------
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
+# Production security settings
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # Additional security
+    SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
 # -------------------------------------------------
-# Rate limiting / Cache
-# -------------------------------------------------
-
-RATELIMIT_ENABLE = True
-RATELIMIT_USE_CACHE = "default"
-
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
-    }
-}
-
-# -------------------------------------------------
-# Logging (console-only; Render/Heroku friendly)
+# Logging
 # -------------------------------------------------
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-
     "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
         "simple": {
             "format": "{levelname} {asctime} {name} {message}",
             "style": "{",
         },
+        "json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "format": "%(levelname)s %(asctime)s %(name)s %(message)s",
+        },
     },
-
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "formatter": "simple" if DEBUG else "json",
+            "level": "DEBUG" if DEBUG else "INFO",
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "django.log",
+            "maxBytes": 1024 * 1024 * 10,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
             "level": "INFO",
         },
     },
-
     "root": {
         "handlers": ["console"],
         "level": "INFO",
     },
-
     "loggers": {
         "django": {
             "handlers": ["console"],
             "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": "WARNING",
             "propagate": False,
         },
         "neurorides": {
@@ -437,11 +667,20 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "channels": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
     },
 }
 
+# Create logs directory if it doesn't exist
+if not DEBUG:
+    (BASE_DIR / "logs").mkdir(exist_ok=True)
+
 # -------------------------------------------------
-# API docs (optional; harmless even if drf_spectacular disabled)
+# API Documentation
 # -------------------------------------------------
 
 SPECTACULAR_SETTINGS = {
@@ -449,4 +688,83 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Robotaxi Fleet Management Platform API",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/api/",
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,
+        "displayRequestDuration": True,
+        "filter": True,
+    },
+    "SECURITY": [
+        {
+            "Bearer": [],
+        }
+    ],
 }
+
+# -------------------------------------------------
+# Health Check Settings
+# -------------------------------------------------
+
+HEALTH_CHECK = {
+    'database': True,
+    'cache': True,
+    'redis': True,
+    'storage': False,
+    'celery': True,
+}
+
+HEALTH_CHECK_PATH = '/health'
+HEALTH_CHECK_SIMPLE_PATH = '/health/simple'
+
+# -------------------------------------------------
+# Cloud Run Specific Optimizations
+# -------------------------------------------------
+
+# Gunicorn settings (via env)
+os.environ.setdefault('GUNICORN_CMD_ARGS', '--workers=3 --worker-class=sync --timeout=120 --access-logfile=- --error-logfile=-')
+
+# Database connection optimizations for serverless
+if 'CONN_MAX_AGE' in DATABASES.get('default', {}):
+    DATABASES['default']['CONN_MAX_AGE'] = min(DATABASES['default']['CONN_MAX_AGE'], 600)
+
+# File upload limits
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024   # 5MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
+
+# -------------------------------------------------
+# Custom Settings
+# -------------------------------------------------
+
+# API Version
+API_VERSION = "1.0.0"
+
+# Feature flags
+FEATURE_FLAGS = {
+    'ENABLE_REALTIME_TRACKING': True,
+    'ENABLE_SURGE_PRICING': True,
+    'ENABLE_AI_DISPATCH': False,
+    'ENABLE_DRIVER_RATINGS': True,
+}
+
+# Service URLs (set via environment)
+SERVICE_URLS = {
+    'frontend': env("FRONTEND_URL", default="https://neurorides.netlify.app"),
+    'backend': env("BACKEND_URL", default=""),
+    'websocket': env("WEBSOCKET_URL", default=""),
+}
+
+# Monitoring
+ENABLE_METRICS = env.bool("ENABLE_METRICS", default=True)
+METRICS_EXPORT_PORT = env.int("METRICS_EXPORT_PORT", default=9090)
+
+# Performance
+DJANGO_QUERY_DEBUG = env.bool("DJANGO_QUERY_DEBUG", default=False)
+if DJANGO_QUERY_DEBUG:
+    LOGGING['loggers']['django.db.backends']['level'] = 'DEBUG'
+
+# -------------------------------------------------
+# END OF SETTINGS
+# -------------------------------------------------
